@@ -2002,12 +2002,48 @@ public class PlanComponent extends JComponent implements PlanView, Scrollable, P
     }
     return strokeWidth;
   }
-  
+  public int print(Graphics g, PageFormat pageFormat, int pageIndex) {
+    if (this.home.getLevels().isEmpty()) {
+      return printSelectedLevel(g, pageFormat, pageIndex);
+    }
+    Level oldSelectedLevel = this.home.getSelectedLevel();
+    try {
+      int firstPageOfLevel = 0;
+      for (Level level : this.home.getLevels()) {
+        if (level.isViewable()) {
+          this.home.setSelectedLevel(level);
+          int levelPageCount = getSelectedLevelPageCount(g, pageFormat);
+          if (pageIndex < firstPageOfLevel + levelPageCount) {
+            return printSelectedLevel(g, pageFormat, pageIndex - firstPageOfLevel);
+          }
+          firstPageOfLevel += levelPageCount;
+        }
+      }
+      return NO_SUCH_PAGE;
+    } finally {
+      this.home.setSelectedLevel(oldSelectedLevel);
+    }
+  }
+
+  private int getSelectedLevelPageCount(Graphics g, PageFormat pageFormat) {
+    Rectangle2D bounds = getItemsBounds(g, getPaintedItems());
+    if (bounds == null) {
+      return 0;
+    } else if (this.home.getPrint() == null || this.home.getPrint().getPlanScale() == null) {
+      return 1;
+    } else {
+      float scale = this.home.getPrint().getPlanScale().floatValue() * LengthUnit.centimeterToInch(72);
+      int across = (int)Math.ceil(bounds.getWidth() * scale / pageFormat.getImageableWidth());
+      int down = (int)Math.ceil(bounds.getHeight() * scale / pageFormat.getImageableHeight());
+      return Math.max(1, across) * Math.max(1, down);
+    }
+  }
+
   /**
    * Prints this component plan at the scale given in the home print attributes or at a scale 
    * that makes it fill <code>pageFormat</code> imageable size if this attribute is <code>null</code>.
    */
-  public int print(Graphics g, PageFormat pageFormat, int pageIndex) {
+  private int printSelectedLevel(Graphics g, PageFormat pageFormat, int pageIndex) {
     List<Selectable> printedItems = getPaintedItems(); 
     Rectangle2D printedItemBounds = getItemsBounds(g, printedItems);
     if (printedItemBounds != null) {
