@@ -1,4 +1,4 @@
-ther#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Fast checks for required project files and submission evidence."""
 
 from pathlib import Path
